@@ -1,45 +1,34 @@
 # crondom-engine
 
-The scheduler engine for [crondom](https://crondom.temidayo.xyz/) — powered by **Inngest**.
-
-Replaces the unreliable GitHub Actions-based scheduler with Inngest's reliable cron execution.
+The scheduler engine for [crondom](https://crondom.temidayo.xyz/) — a persistent Node.js process running on **Render** that checks for due cron jobs every 60 seconds.
 
 ## How it works
 
-1. When a job is created, the frontend sends a `job/execute` event to Inngest
-2. Inngest triggers this engine → makes the HTTP request → logs to Turso
-3. The engine calculates the next run time, sleeps until then, and re-triggers itself
-4. This chain continues indefinitely — one event per job per execution
+1. A `node-cron` job runs every **60 seconds**
+2. It queries Turso for enabled cron jobs
+3. For each job whose cron expression matches the current time, it executes the HTTP request
+4. Results are logged to the `execution_logs` table in Turso
 
 ## Stack
 
-- **Runtime**: Node.js (any host)
-- **Scheduling**: [Inngest](https://inngest.com) (free — 10K runs/month)
+- **Runtime**: Node.js (ESM)
+- **Scheduling**: `node-cron` (in-process)
 - **Database**: Turso via `@libsql/client`
+- **Hosting**: Render (free tier)
 
-## Deploy to Render
+## Deploy
 
-1. Push this repo to GitHub
+1. Push to GitHub
 2. Go to [render.com](https://render.com) → **New Web Service**
 3. Connect your repo
-4. Set:
-   - **Start command**: `node src/server.js`
-   - **Health check path**: `/health`
-5. Add environment variables (see below)
-6. Deploy
+4. Set **Start command**: `node src/server.js`
+5. Set **Health check path**: `/health`
+6. Add environment variables:
 
-## Environment variables
-
-| Variable | Description |
+| Variable | Value |
 |---|---|
-| `TURSO_DATABASE_URL` | Turso database URL |
-| `TURSO_AUTH_TOKEN` | Turso auth token |
-| `INNGEST_EVENT_KEY` | Inngest event key (from inngest.com) |
-| `INNGEST_SIGNING_KEY` | Inngest signing key (from inngest.com) |
-| `PORT` | Server port (default: 3000) |
+| `TURSO_DATABASE_URL` | Your Turso database URL |
+| `TURSO_AUTH_TOKEN` | Your Turso auth token |
+| `PORT` | 3000 |
 
-## Inngest setup
-
-1. Go to [inngest.com](https://inngest.com) → create account
-2. Create a new app → copy Event Key + Signing Key
-3. After deploying, set the Inngest app URL to `https://your-app.onrender.com/api/inngest`
+7. Deploy
